@@ -9,7 +9,6 @@ public static class TypeScriptRuntime
     public static readonly string MemoryPackWriter = """
 // Code of MemoryPack
 const nullCollection = -1;
-const union = 254;
 const nullObject = 255;
 
 // DateTimeOffset.FromUnixTimeMilliseconds(0).Ticks
@@ -457,7 +456,6 @@ export class MemoryPackWriter {
     public static readonly string MemoryPackReader = """
 // Code of MemoryPack
 const nullCollection = -1;
-const union = 254;
 const nullObject = 255;
 
 // bool
