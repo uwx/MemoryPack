@@ -75,7 +75,7 @@ public class TypeScriptMember
                 DefaultValue = primitiveType.DefaultValue,
                 IsNullable = symbol.NullableAnnotation == NullableAnnotation.Annotated || symbol.IsReferenceType,
                 WriteMethodTemplate = $"writer.write{primitiveType.BinaryOperationMethod}({{0}})",
-                ReadMethodTemplate = $"reader.read{primitiveType.BinaryOperationMethod}()"
+                ReadMethodTemplate = $"reader.read{primitiveType.BinaryOperationMethod}()!"
             };
         }
 
