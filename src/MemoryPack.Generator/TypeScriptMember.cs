@@ -201,7 +201,7 @@ public class TypeScriptMember
                 TypeName = $"{primitiveType.TypeName}",
                 DefaultValue = primitiveType.DefaultValue,
                 WriteMethodTemplate = $"writer.write{primitiveType.BinaryOperationMethod}({{0}})",
-                ReadMethodTemplate = $"reader.read{primitiveType.BinaryOperationMethod}()"
+                ReadMethodTemplate = $"reader.read{primitiveType.BinaryOperationMethod}()!"
             };
         }
     }
