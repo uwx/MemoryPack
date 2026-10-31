@@ -1,4 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Diagnostics;
@@ -359,7 +359,7 @@ public partial class TypeMeta
             var callbackCount = new[] { this.OnSerializing, this.OnSerialized, this.OnDeserialized, this.OnDeserializing }.Select(x => x.Length).Sum();
             if (fixedSize && GenerateType == GenerateType.Object && !this.IsValueType && callbackCount == 0)
             {
-                var sizeOf = string.Join(" + ", Members.Select(x => $"System.Runtime.CompilerServices.Unsafe.SizeOf<{x.MemberType.FullyQualifiedToString()}>()"));
+                var sizeOf = string.Join(" + ", Members.Select(x => $"global::MemoryPack.MemoryPackUnmanaged.SizeOf<{x.MemberType.FullyQualifiedToString()}>()"));
                 var headerPlus = (Members.Length == 0) ? "1" : "1 + ";
                 fixedSizeInterface = ", global::MemoryPack.IFixedSizeMemoryPackable";
                 fixedSizeMethod = $$"""
@@ -1146,7 +1146,9 @@ public static class {{initializerName}}
                 var method = (x.Type.TryGetMemoryPackableType(reference, out var genType, out _) && genType is GenerateType.Object or GenerateType.VersionTolerant or GenerateType.CircularReference)
                     ? "WritePackable"
                     : "WriteValue";
-                return $"                    case {x.Tag}: writer.{method}(System.Runtime.CompilerServices.Unsafe.As<{symbolFullQualified}?, {ToUnionTagTypeFullyQualifiedToString(x.Type)}>(ref value)); break;";
+                // No Unsafe.As: the value already is the tag's type, and the writer boxes
+                // nothing, so a cast does the same job without reinterpreting memory.
+                return $"                    case {x.Tag}: writer.{method}(({ToUnionTagTypeFullyQualifiedToString(x.Type)})value!); break;";
             })
             .NewLine();
 
@@ -1194,9 +1196,12 @@ public static class {{initializerName}}
 
             return $$"""
                 case {{x.Tag}}:
-                    if (value is {{tagTypeFullQualified}})
+                    if (value is {{tagTypeFullQualified}} typed{{x.Tag}})
                     {
-                        reader.{{method}}(ref System.Runtime.CompilerServices.Unsafe.As<{{symbolFullQualified}}?, {{tagTypeFullQualified}}>(ref value));
+                        // No Unsafe.As: the pattern variable is already a reference to the
+                        // value being filled in, which is all the reader needs.
+                        reader.{{method}}(ref typed{{x.Tag}});
+                        value = typed{{x.Tag}};
                     }
                     else
                     {
@@ -1332,7 +1337,7 @@ public partial class MemberMeta
             case MemberKind.Unmanaged:
             case MemberKind.Enum:
             case MemberKind.UnmanagedNullable:
-                return $"writer.WriteVarInt(System.Runtime.CompilerServices.Unsafe.SizeOf<{MemberType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}>());";
+                return $"writer.WriteVarInt(global::MemoryPack.MemoryPackUnmanaged.SizeOf<{MemberType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}>());";
             case MemberKind.String:
                 return $"writer.WriteVarInt(writer.GetStringWriteLength(value.@{Name}));";
             case MemberKind.UnmanagedArray:
